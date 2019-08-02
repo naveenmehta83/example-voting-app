@@ -2,30 +2,48 @@ pipeline {
   agent any
 
   tools{
-    maven 'Maven 3.6.1'
+    maven 'maven 3.6.1'
 
   }
 
   stages{
       stage(one){
-          steps{
-              echo 'Compiling worker app'
-              dir('worker'){
-                sh 'mvn compile'
-              }
+        when{
+            changeset "**/worker/**"
           }
+
+        steps{
+          echo 'Compiling worker app..'
+          dir('worker'){
+            sh 'mvn compile'
+          }
+        }
       }
       stage(two){
-          steps{
-              echo 'Running Unit Tets on worker app'
+        when{
+          changeset "**/worker/**"
+        }
+        steps{
+          echo 'Running Unit Tets on worker app..'
+          dir('worker'){
+            sh 'mvn clean test'
+           }
 
           }
       }
       stage(three){
-          steps{
-              echo 'Packaging worker app'
-
+        when{
+          branch 'master'
+          changeset "**/worker/**"
+        }
+        steps{
+          echo 'Packaging worker app'
+          dir('worker'){
+            sh 'mvn package -DskipTests'
+            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
           }
+
+        }
       }
   }
 
