@@ -2,54 +2,46 @@ pipeline {
   agent any
 
   tools{
-    maven 'maven 3.6.1'
+    nodejs 'NodeJS 8.9.0'
 
   }
 
   stages{
-      stage(one){
+      stage(build){
         when{
-            changeset "**/worker/**"
+            changeset "**/result/**"
           }
 
         steps{
-          echo 'Compiling worker app..'
+          echo 'Compiling result app..'
           dir('worker'){
-            sh 'mvn compile'
+            sh 'npm install'
           }
         }
       }
-      stage(two){
+      stage(test){
         when{
-          changeset "**/worker/**"
+          changeset "**/result/**"
         }
         steps{
-          echo 'Running Unit Tets on worker app..'
-          dir('worker'){
-            sh 'mvn clean test'
+          echo 'Running Unit Tets on result app..'
+          dir('result'){
+            sh 'npm test'
            }
 
           }
-      }
-      stage(three){
-        when{
-          branch 'master'
-          changeset "**/worker/**"
-        }
-        steps{
-          echo 'Packaging worker app'
-          dir('worker'){
-            sh 'mvn package -DskipTests'
-            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-          }
-
-        }
       }
   }
 
   post{
     always{
         echo 'Building multibranch pipeline for worker is completed..'
+    }
+    failiure{
+      slackSend (channel: "instavote-cd", message: "Build Failed - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)")
+    }
+    success{
+      slackSend (channel: "instavote-cd", message: "Build Succeeded - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)")
     }
   }
 }
